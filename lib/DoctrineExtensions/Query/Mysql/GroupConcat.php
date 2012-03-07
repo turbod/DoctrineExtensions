@@ -1,52 +1,63 @@
 <?php
-
 /**
- * DoctrineExtensions Mysql Function Pack
  *
- * LICENSE
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to kontakt@beberlei.de so I can send you a copy immediately.
+ * PHP version 5
+ *
+ * @category
+ * @package
+ * @subpackage
+ * @author     Tóth Norbert <tothnorbert.zalalovo@gmail.com>
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id: actions.class.php 23810 2009-11-12 11:07:44Z Kris.Wallsmith $
+ * @link       www.tothnorbert.co.cc
  */
-
-namespace DoctrineExtensions\Query\Mysql;
+namespace Konstruktor\TradeBundle\DQL;
 
 use Doctrine\ORM\Query\AST\Functions\FunctionNode,
     Doctrine\ORM\Query\Lexer;
 
-// limited support for GROUP_CONCAT
+
 class GroupConcat extends FunctionNode
 {
     public $isDistinct = false;
     public $expression = null;
 
+    /**
+     * @param \Doctrine\ORM\Query\SqlWalker $sqlWalker
+     * @return string
+     */
     public function getSql(\Doctrine\ORM\Query\SqlWalker $sqlWalker)
     {
         return 'GROUP_CONCAT(' .
             ($this->isDistinct ? 'DISTINCT ' : '') .
             $this->expression->dispatch($sqlWalker) .
+            ' ' . $this->orderExpression->dispatch($sqlWalker) .
         ')';
-    }
+    }//end getSql()
 
+
+    /**
+     * @param \Doctrine\ORM\Query\Parser $parser
+     */
     public function parse(\Doctrine\ORM\Query\Parser $parser)
     {
 
         $parser->match(Lexer::T_IDENTIFIER);
         $parser->match(Lexer::T_OPEN_PARENTHESIS);
-        
+
         $lexer = $parser->getLexer();
         if ($lexer->isNextToken(Lexer::T_DISTINCT)) {
             $parser->match(Lexer::T_DISTINCT);
-            
+
             $this->isDistinct = true;
         }
 
         $this->expression = $parser->SingleValuedPathExpression();
+        $parser->match(Lexer::T_COMMA);
+        $this->orderExpression = $parser->OrderByClause();
 
         $parser->match(Lexer::T_CLOSE_PARENTHESIS);
-    }
+    }//end parse()
 
-}
+}//end class
